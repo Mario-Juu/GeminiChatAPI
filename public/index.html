@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <title>Websocket com Go</title>
+  </head>
+  <body>
+    
+    <div id="app">
+      <button class = "button" @click="connect" v-if="!ws">Conectar</button>
+      <div class="container">
+        <form class="form" @submit.prevent="sendMessage()">
+          <input class="input" v-model="message" placeholder="mensagem" />
+          <button class="button" type="submit">Enviar</button>
+        </form>
+        <ul class="chat-messages">
+            <li
+              v-for="(msg, idx) in messages"
+              :key="idx"
+              class="message"
+              :class="[msg.user ? 'message-right' : '']"
+            >
+              <div class="message-avatar">
+                {{ msg.user ? 'user' : 'bot' }}
+              </div>
+              <div class="message-content">
+                <p class="message-text">{{msg.content}}</p>
+                <p class="message-timestamp">{{ msg.sentAt }}</p>
+              </div>
+              
+              
+            </li>
+          </ul>
+      </div>
+    </div>
+<script>
+  const { createApp, ref } = Vue
+
+  createApp({
+    data(){
+        return{
+            ws: null,
+            message: "",
+            messages: [],
+            loading: false,
+        }
+    }, methods: {
+        sendMessage(){
+            const msg ={
+                Content: this.message
+            }
+            this.ws.send(JSON.stringify(msg));
+            this.message = "";
+            this.loading = true;
+        },
+        onOpen(event){
+            this.connected = true;            
+        },
+        onMessage(event){
+            this.messages.push(JSON.parse(event.data));
+            this.loading = false;
+        },
+        disconnect(){
+            this.ws.close();
+            this.message = "";
+            this.messages = [];
+            
+        },
+        connect(){
+            this.ws = new WebSocket("ws://localhost:8080/ws");
+            this.ws.onopen = this.onOpen;
+            this.ws.onmessage = this.onMessage;
+        },
+    }
+  }).mount('#app')
+</script>
+
+</body>
+</html>
